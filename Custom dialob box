@@ -1,0 +1,179 @@
+import React, { useEffect, useRef, ReactNode, MouseEvent, KeyboardEvent, useState } from "react";
+import { X } from "lucide-react"; // Assuming lucide-react is available for the close icon
+
+// Root dialog component
+interface CustomDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: ReactNode;
+}
+
+export function CustomDialog({ open, onOpenChange, children }: CustomDialogProps) {
+  useEffect(() => {
+    // Prevent body scrolling when the dialog is open
+    document.body.style.overflow = open ? "hidden" : "unset";
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [open]);
+
+  // If dialog is not open, return null to not render anything
+  if (!open) return null;
+
+  return (
+    // Overlay for the dialog, clicking it closes the dialog
+    <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center">
+      <div
+        className="fixed inset-0 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+        onClick={() => onOpenChange(false)}
+        data-state={open ? "open" : "closed"} // Add data-state for animations
+      />
+      {children}
+    </div>
+  );
+}
+
+// Dialog content
+interface CustomDialogContentProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: ReactNode;
+  className?: string;
+  onClose?: () => void; // Added onClose to handle escape key and close button
+}
+
+export function CustomDialogContent({
+  children,
+  className = "",
+  onClose,
+  ...props
+}: CustomDialogContentProps) {
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Handle escape key to close the dialog
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && onClose) {
+        onClose();
+      }
+    };
+
+    // Add event listener for keydown (for escape key)
+    document.addEventListener("keydown", handleEscape as any); // Cast for type compatibility
+    return () => document.removeEventListener("keydown", handleEscape as any);
+  }, [onClose]);
+
+  // Prevent click propagation from the dialog content to the overlay
+  const handleContentClick = (e: MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+  };
+
+  return (
+    <div
+      ref={contentRef}
+      onClick={handleContentClick}
+      className={`
+        fixed left-[50%] top-[50%] z-50
+        grid w-full max-w-lg
+        translate-x-[-50%] translate-y-[-50%]
+        gap-4  bg-background p-6 shadow-lg duration-200
+        data-[state=open]:animate-in data-[state=closed]:animate-out
+        data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0
+        data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95
+        data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]
+        data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]
+        sm:rounded-sm md:w-full
+        ${className}
+      `}
+      data-state={onClose ? "open" : "closed"} // Assuming if onClose is provided, it's 'open'
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}
+
+// Dialog header
+interface CustomDialogHeaderProps {
+  children: ReactNode;
+  className?: string;
+  showClose?: boolean;
+  onClose?: () => void; // Added onClose for the close button
+}
+
+export function CustomDialogHeader({
+  children,
+  className = "",
+  showClose = true,
+  onClose,
+}: CustomDialogHeaderProps) {
+  return (
+    <div className={`flex flex-col space-y-1.5 text-center sm:text-left ${className}`}>
+      {children}
+      {showClose && onClose && (
+        // Close button with shadcn styling
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Dialog title
+interface CustomDialogTitleProps {
+  children: ReactNode;
+  className?: string;
+}
+
+export function CustomDialogTitle({ children, className = "" }: CustomDialogTitleProps) {
+  return (
+    <h2 className={`text-lg font-semibold leading-none tracking-tight ${className}`}>
+      {children}
+    </h2>
+  );
+}
+
+// Dialog description (similar to shadcn's DialogDescription)
+interface CustomDialogDescriptionProps {
+  children: ReactNode;
+  className?: string;
+}
+
+export function CustomDialogDescription({ children, className = "" }: CustomDialogDescriptionProps) {
+  return (
+    <p className={`text-sm text-muted-foreground ${className}`}>
+      {children}
+    </p>
+  );
+}
+
+
+// Dialog body (renamed from CustomDialogBody for more flexibility)
+interface CustomDialogBodyProps {
+  children: ReactNode;
+  className?: string;
+}
+
+export function CustomDialogBody({ children, className = "" }: CustomDialogBodyProps) {
+  // This component will primarily act as a container for the main content of the dialog.
+  // shadcn doesn't have a specific "body" component but relies on direct content within Content.
+  // We'll keep it for structural clarity, but its styling might be minimal.
+  return <div className={`py-4 ${className}`}>{children}</div>;
+}
+
+// Dialog footer
+interface CustomDialogFooterProps {
+  children: ReactNode;
+  className?: string;
+}
+
+export function CustomDialogFooter({ children, className = "" }: CustomDialogFooterProps) {
+  return (
+    <div className={`flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 ${className}`}>
+      {children}
+    </div>
+  );
+}
