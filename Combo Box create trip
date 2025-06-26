@@ -1,0 +1,89 @@
+"use client";
+
+import * as React from "react";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "./command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "./popover";
+import { Button } from "./button";
+
+type ComboboxProps = {
+  options: string[];
+  selected: string | null;
+  onSelect: (value: string) => void;
+  disabled?: boolean;
+};
+
+export function Combobox({ options, selected, onSelect, disabled = false }: ComboboxProps) {
+  const [open, setOpen] = React.useState(false);
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
+  const [width, setWidth] = React.useState<number | undefined>(undefined);
+
+  React.useLayoutEffect(() => {
+    if (buttonRef.current) {
+      setWidth(buttonRef.current.offsetWidth);
+    }
+  }, [open]);
+
+  return (
+    <Popover open={open} onOpenChange={disabled ? () => { } : setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          ref={buttonRef}
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={disabled}
+          className="w-full justify-between"
+        >
+          {selected || "Select an option"}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+
+      {!disabled && (
+        <PopoverContent
+          className="p-0"
+          style={{ width }}
+          forceMount
+        >
+          <div onClick={(e) => e.stopPropagation()}>
+            <Command>
+              <CommandInput placeholder="Search..." />
+              <CommandEmpty>No option found.</CommandEmpty>
+              <CommandGroup>
+                {options.map((option) => (
+                  <CommandItem
+                    key={option}
+                    onSelect={() => {
+                      onSelect(option);
+                      setOpen(false);
+                    }}
+                  >
+                    {option}
+                    <Check
+                      className={cn(
+                        "ml-auto h-4 w-4",
+                        selected === option ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </Command>
+          </div>
+        </PopoverContent>
+      )}
+    </Popover>
+  );
+}
